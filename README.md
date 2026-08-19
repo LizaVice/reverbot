@@ -48,6 +48,7 @@ them in a different effect/speed combo without re-searching.
 | 🎧 Delivery | Mastered mp3, or as a Telegram voice note |
 | 🖼 Extras | Cover art thumbnail, on-demand lyrics, `/history` with one-tap re-delivery |
 | 🪟 Deployment | Runs as a Windows service via [NSSM](https://nssm.cc/), auto-restarts on crash |
+| 🐶 Watchdog | Separate scheduled task pings the service every 15 min and Telegrams you if it stops — see `watchdog.py` |
 
 ### About that reverb
 
@@ -102,6 +103,18 @@ Or install as a Windows service — see `install_service.ps1` (uses NSSM;
 optionally pair with `setup_service_account.ps1` to run it under a
 dedicated low-privilege local account instead of your own).
 
+Optionally, register the watchdog so you get a Telegram message if the
+service ever stops (this is what caught nothing, before — it went down
+silently once with no trace anywhere):
+
+```
+.\install_watchdog_task.ps1
+```
+
+No elevation needed — it's a per-user Scheduled Task, not another Windows
+service. Runs only while you're logged in; if you need it to run logged-out
+too, that needs a saved password on the task (`schtasks /change ... /RP`).
+
 ## 📁 Project layout
 
 ```
@@ -111,6 +124,10 @@ setup_service_account.ps1   optional: creates a dedicated low-privilege
                              service account instead of running as you
 restart.sh                  kills the running instance so the service
                              supervisor relaunches it with fresh code
+watchdog.py                 checks the service every run, Telegrams you on
+                             a down/recovered transition (stdlib only)
+install_watchdog_task.ps1   registers watchdog.py as a 15-min Scheduled Task
+test_watchdog.py            self-check for watchdog.py's alert logic
 ```
 
 ## ⚖️ Disclaimer
