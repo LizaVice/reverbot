@@ -1138,7 +1138,22 @@ async def start(message: Message):
         "\"🎙 As voice note\" in the effects list — deliver the result as a voice message instead of mp3.\n"
         "You can also just type a song name, or send a YouTube, TikTok, "
         "Spotify, or Apple Music link.\n"
-        "/history — recently identified tracks, tap any to get it again."
+        "/history — recently identified tracks, tap any to get it again.\n"
+        "/terms — a short note on what this bot does and doesn't claim."
+    )
+
+
+@dp.message(F.text == "/terms")
+async def terms(message: Message):
+    await message.reply(
+        "Personal, non-commercial bot — only usable by accounts listed in "
+        "ALLOWED_USER_IDS. Not affiliated with Shazam, Spotify, Apple Music, "
+        "YouTube, or TikTok — it identifies a track via the public Shazam "
+        "service and locates it in already-public sources via yt-dlp; it "
+        "doesn't crack anything or host a media library. Whoever runs this "
+        "bot is responsible for making sure that use doesn't violate "
+        "copyright law or those services' terms in their own jurisdiction. "
+        "No warranty — see DISCLAIMER.md in the repo for details."
     )
 
 

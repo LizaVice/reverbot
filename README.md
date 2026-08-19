@@ -113,6 +113,12 @@ restart.sh                  kills the running instance so the service
                              supervisor relaunches it with fresh code
 ```
 
+## ⚖️ Disclaimer
+
+Personal, non-commercial tool — not affiliated with Shazam, Spotify, Apple
+Music, YouTube, or TikTok. See [`DISCLAIMER.md`](./DISCLAIMER.md) for what
+it actually does and who's responsible for how it's used.
+
 ## 💡 Ideas for extending this
 
 - Split `bot.py` into modules (recognition / download / mastering /
