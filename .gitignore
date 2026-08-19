@@ -1,0 +1,46 @@
+# Secrets - never commit
+token.txt
+.env
+cookies.txt
+
+# Runtime artifacts
+*.log
+bot.pid
+
+# Windows service setup output - not secrets themselves (no passwords are ever
+# written to disk, see setup_service_account.ps1), but reveal local account
+# names/paths with no value to anyone else
+acct_info.txt
+*_result.txt
+eventlog*.txt
+
+# Debug/analysis scratch dirs from development - not part of the project
+audio_check/
+check_frames/
+final_ir_test/
+mailru_dl_test/
+reverb_ir/
+reverb_test/
+scratch_analysis/
+test_audio/
+unused/
+verify2/
+video_frames/
+video_frames2/
+
+# Fiverr/Kwork marketing assets - separate from the bot itself
+gig*.png
+gig*.mp4
+gig*.html
+mid_frame.png
+v3_mid_frame*.png
+videos/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Editor/IDE
+.vs/

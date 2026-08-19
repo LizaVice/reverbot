@@ -1,0 +1,5 @@
+# Pinned to versions confirmed installed via
+# Python312/Lib/site-packages/*.dist-info on 2026-08-15.
+aiogram==3.30.0
+shazamio==0.8.1
+yt-dlp==2026.7.4
