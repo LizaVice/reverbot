@@ -161,7 +161,7 @@ RECOGNIZE_CLIP_SECONDS = 25
 #
 # tried afir convolution reverb with a synthetic (noise-burst +
 # exponential decay) impulse response here — spectrogram looked like a real
-# decaying tail, but live it sounded hollow/phasey ("как в вакууме"): a fake
+# decaying tail, but live it sounded hollow/phasey (like being underwater): a fake
 # IR built from raw noise has no clean initial impulse, so afir's convolution
 # smears and partially cancels the *dry* signal's own transients, not just
 # adding a tail on top. Real convolution reverb needs an actual recorded IR,
@@ -174,7 +174,7 @@ RECOGNIZE_CLIP_SECONDS = 25
 #   1. aecho's in_gain*out_gain scales the WHOLE output, dry included — not
 #      just the echoes. Measured: with in_gain=0.75/out_gain=0.72 the dry
 #      passthrough was already -46% before any echo was even added. That's
-#      the "как в банке" muffling — the direct signal was never actually 100%.
+#      the "boxed-in" muffling — the direct signal was never actually 100%.
 #   2. aecho has no per-tap filtering — every repeat carries the exact same
 #      frequency content as the original, just quieter. Real reverb's later
 #      reflections lose highs (air/material absorption); ours didn't, so
@@ -192,19 +192,19 @@ RECOGNIZE_CLIP_SECONDS = 25
 # pipe-separated strings ready to drop into aecho's delays:/decays: args.
 REVERB_PRESETS = {
     "reverb_light": (
-        "Reverb (лёгкий)",
+        "Reverb (Light)",
         "8|11|14|19", "0.16|0.115|0.083|0.06",
         "25|34|45|60", "0.043|0.031|0.022|0.016",
         9000, "warm",
     ),
     "reverb_medium": (
-        "Reverb (средний)",
+        "Reverb (Medium)",
         "10|13|17|22|28|37|48", "0.24|0.192|0.154|0.123|0.098|0.079|0.063",
         "62|81|105|137|178|231|300", "0.05|0.04|0.032|0.026|0.021|0.016|0.013",
         5500, "warm",
     ),
     "reverb_heavy": (
-        "Reverb (сильный)",
+        "Reverb (Heavy)",
         "12|14|17|21|25|30|36|43|52|62|74", "0.32|0.275|0.237|0.204|0.175|0.151|0.129|0.111|0.096|0.082|0.071",
         "89|107|128|154|184|221|265|318|382|458|550", "0.061|0.052|0.045|0.039|0.033|0.029|0.025|0.021|0.018|0.016|0.013",
         3200, "warm",
@@ -225,7 +225,7 @@ REVERB_PRESETS = {
 # HRTF processing, which is what actual 8D would need). It no longer bundles
 # a baked-in reverb tail — select a Reverb preset alongside it if you want both.
 SIMPLE_EFFECTS = {
-    "original": ("Оригинал", None, "bright"),
+    "original": ("Original", None, "bright"),
     "nightcore": ("Nightcore", None, "nightcore"),
     "bass_boosted": ("Bass Boosted", "bass=g=14:f=60:w=0.9", "bright"),
     "8d": ("8D Audio", "apulsator=hz=0.08:amount=1", "bright"),
@@ -238,7 +238,7 @@ SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 
 # raw yt-dlp extraction and the pitch-shifted variants both sound
 # thin/quiet next to an actual release. First attempt (one-shot compressor +
-# EQ + single-pass loudnorm) came back sounding "глухой" (muffled) — single-
+# EQ + single-pass loudnorm) came back sounding muffled — single-
 # pass loudnorm's dynamic gain-riding smears transients, a 3:1 compressor was
 # squashing punch, and there was no midrange presence to counter the added
 # bass, so the mix masked itself. Fixed: gentler glue compression, a presence
@@ -261,13 +261,13 @@ PRE_CHAINS = {
     "warm": PRE_MASTER_CHAIN_WARM,
     # nightcore wants brighter/crisper than the default bright chain, not just
     # "sped up" — an extra treble push is what actually separates it from
-    # picking "Оригинал" at the same speed.
+    # picking "Original" at the same speed.
     "nightcore": PRE_MASTER_CHAIN + ",treble=g=2:f=11000",
 }
 
 
 # a stuck/hung ffmpeg process (bad input, weird codec, whatever)
-# would otherwise block the handler forever - Telegram's "Слушаю..." status
+# would otherwise block the handler forever - Telegram's "Listening..." status
 # never updates and the whole request just hangs. Fail it loudly instead.
 FFMPEG_TIMEOUT_SECONDS = 60
 
@@ -718,7 +718,7 @@ def _add_history(entry: HistoryEntry) -> None:
 
 
 def _effect_keyboard(token: str) -> InlineKeyboardMarkup:
-    """Step 1: check off one or more effects (combined together), then "Дальше"."""
+    """Step 1: check off one or more effects (combined together), then "Next"."""
     state = DELIVERY.get(token)
     selected = state.selected if state else set()
     rows: list[list[InlineKeyboardButton]] = []
@@ -733,11 +733,11 @@ def _effect_keyboard(token: str) -> InlineKeyboardMarkup:
         rows.append(row)
     if state:
         voice_mark = "☑️ " if state.as_voice else "▫️ "
-        rows.append([InlineKeyboardButton(text=voice_mark + "🎙 Как голосовое", callback_data=f"voicetgl:{token}")])
+        rows.append([InlineKeyboardButton(text=voice_mark + "🎙 As voice note", callback_data=f"voicetgl:{token}")])
     if selected:
-        rows.append([InlineKeyboardButton(text="▶️ Дальше — выбрать скорость", callback_data=f"go:{token}")])
+        rows.append([InlineKeyboardButton(text="▶️ Next — pick a speed", callback_data=f"go:{token}")])
     if state and state.lyrics:
-        text = ("✅ " if "lyrics" in state.sent else "") + "📄 Текст песни"
+        text = ("✅ " if "lyrics" in state.sent else "") + "📄 Lyrics"
         rows.append([InlineKeyboardButton(text=text, callback_data=f"lyr:{token}")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -768,7 +768,7 @@ def _speed_keyboard(token: str) -> InlineKeyboardMarkup:
             row = []
     if row:
         rows.append(row)
-    rows.append([InlineKeyboardButton(text="⬅ Назад", callback_data=f"back:{token}")])
+    rows.append([InlineKeyboardButton(text="⬅ Back", callback_data=f"back:{token}")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -789,7 +789,7 @@ def _fine_speed_keyboard(token: str, base: float) -> InlineKeyboardMarkup:
             row = []
     if row:
         rows.append(row)
-    rows.append([InlineKeyboardButton(text="⬅ Назад", callback_data=f"backspd:{token}")])
+    rows.append([InlineKeyboardButton(text="⬅ Back", callback_data=f"backspd:{token}")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -806,7 +806,7 @@ async def start_delivery(
     _sweep_stale_deliveries()
     label = f"{artist} — {title}" if artist else title
     query = search_query if search_query is not None else f"{artist} {title}"
-    await safe_edit_text(status, f"Нашёл: {label}\nКачаю mp3...")
+    await safe_edit_text(status, f"Found: {label}\nDownloading mp3...")
 
     tmp_dir = tempfile.mkdtemp(prefix="szm_")
     try:
@@ -819,15 +819,15 @@ async def start_delivery(
         if isinstance(e, NoMatchingVideoError):
             await safe_edit_text(
                 status,
-                f"Распознал как {label}, но на YouTube нашлись только непохожие по названию записи — не рискнул прислать не то.",
+                f"Identified as {label}, but the YouTube results didn't match the title closely enough — didn't want to risk sending the wrong track.",
             )
         elif is_auth_error(e):
             await safe_edit_text(
                 status,
-                f"Распознал как {label}, но YouTube требует авторизацию — куки в cookies.txt устарели, нужно обновить.",
+                f"Identified as {label}, but YouTube is asking for authentication — cookies.txt is stale and needs refreshing.",
             )
         else:
-            await safe_edit_text(status, f"Распознал как {label}, но не смог скачать файл.")
+            await safe_edit_text(status, f"Identified as {label}, but couldn't download the file.")
         return
 
     token = uuid.uuid4().hex[:12]
@@ -837,7 +837,7 @@ async def start_delivery(
     )
     _add_history(HistoryEntry(title=title, artist=artist, search_query=search_query, coverart=coverart, lyrics=lyrics))
 
-    await safe_edit_text(status, f"Нашёл: {label}\nКакой эффект? (можно несколько)", reply_markup=_effect_keyboard(token))
+    await safe_edit_text(status, f"Found: {label}\nWhich effect? (pick one or more)", reply_markup=_effect_keyboard(token))
 
 
 @dp.callback_query(F.data.startswith("tgl:"))
@@ -846,9 +846,9 @@ async def handle_toggle(callback: CallbackQuery) -> None:
     await callback.answer()
     state = DELIVERY.get(token)
     if not state or key not in EFFECTS:
-        await safe_edit_text(callback.message, "Эта карточка устарела, пришли отрывок ещё раз.")
+        await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
-    # "Оригинал" (no filter) doesn't combine with anything — picking it clears
+    # "Original" (no filter) doesn't combine with anything — picking it clears
     # the rest, and picking anything else drops it. Two reverb presets at once
     # doesn't mean anything either (only one dry/wet graph gets built) — picking
     # one drops any other reverb preset already selected.
@@ -874,7 +874,7 @@ async def handle_voice_toggle(callback: CallbackQuery) -> None:
     await callback.answer()
     state = DELIVERY.get(token)
     if not state:
-        await safe_edit_text(callback.message, "Эта карточка устарела, пришли отрывок ещё раз.")
+        await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
     state.as_voice = not state.as_voice
     try:
@@ -890,12 +890,12 @@ async def handle_go(callback: CallbackQuery) -> None:
     await callback.answer()
     state = DELIVERY.get(token)
     if not state or not state.selected:
-        await safe_edit_text(callback.message, "Эта карточка устарела, пришли отрывок ещё раз.")
+        await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
     LAST_SPEED_TOKEN = token
     label = f"{state.artist} — {state.title}" if state.artist else state.title
     await safe_edit_text(
-        callback.message, f"{label}\n{_combo_label(state)} — какая скорость?", reply_markup=_speed_keyboard(token)
+        callback.message, f"{label}\n{_combo_label(state)} — what speed?", reply_markup=_speed_keyboard(token)
     )
 
 
@@ -905,10 +905,10 @@ async def handle_back(callback: CallbackQuery) -> None:
     await callback.answer()
     state = DELIVERY.get(token)
     if not state:
-        await safe_edit_text(callback.message, "Эта карточка устарела, пришли отрывок ещё раз.")
+        await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
     label = f"{state.artist} — {state.title}" if state.artist else state.title
-    await safe_edit_text(callback.message, f"Нашёл: {label}\nКакой эффект? (можно несколько)", reply_markup=_effect_keyboard(token))
+    await safe_edit_text(callback.message, f"Found: {label}\nWhich effect? (pick one or more)", reply_markup=_effect_keyboard(token))
 
 
 @dp.callback_query(F.data.startswith("lyr:"))
@@ -917,7 +917,7 @@ async def handle_lyrics(callback: CallbackQuery) -> None:
     await callback.answer()
     state = DELIVERY.get(token)
     if not state:
-        await safe_edit_text(callback.message, "Эта карточка устарела, пришли отрывок ещё раз.")
+        await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
     if state.lyrics:
         await callback.message.answer(f"📄 {state.artist} — {state.title}\n\n{state.lyrics[:4000]}")
@@ -934,13 +934,13 @@ async def handle_speed_range(callback: CallbackQuery) -> None:
     await callback.answer()
     state = DELIVERY.get(token)
     if not state or not state.selected:
-        await safe_edit_text(callback.message, "Эта карточка устарела, пришли отрывок ещё раз.")
+        await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
     base = float(base_str)
     label = f"{state.artist} — {state.title}" if state.artist else state.title
     await safe_edit_text(
         callback.message,
-        f"{label}\n{_combo_label(state)} — точная скорость ({base:.2f}–{base + 0.09:.2f}x)?",
+        f"{label}\n{_combo_label(state)} — exact speed ({base:.2f}–{base + 0.09:.2f}x)?",
         reply_markup=_fine_speed_keyboard(token, base),
     )
 
@@ -951,11 +951,11 @@ async def handle_back_speed(callback: CallbackQuery) -> None:
     await callback.answer()
     state = DELIVERY.get(token)
     if not state or not state.selected:
-        await safe_edit_text(callback.message, "Эта карточка устарела, пришли отрывок ещё раз.")
+        await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
     label = f"{state.artist} — {state.title}" if state.artist else state.title
     await safe_edit_text(
-        callback.message, f"{label}\n{_combo_label(state)} — какая скорость?", reply_markup=_speed_keyboard(token)
+        callback.message, f"{label}\n{_combo_label(state)} — what speed?", reply_markup=_speed_keyboard(token)
     )
 
 
@@ -1014,7 +1014,7 @@ async def _generate_and_send(target: Message, token: str, speed: float) -> bool:
                 await target.answer_audio(FSInputFile(dst), title=display_title, performer=state.artist or None)
     except Exception:
         logging.exception("sending %s failed", sent_key)
-        await target.answer(f"Не смог собрать «{label}» на {speed}x, попробуй ещё раз.")
+        await target.answer(f"Couldn't put together “{label}” at {speed}x, try again.")
         return True
 
     state.sent.add(sent_key)
@@ -1027,10 +1027,10 @@ async def handle_speed(callback: CallbackQuery) -> None:
     state = DELIVERY.get(token)
     if not state or not state.selected:
         await callback.answer()
-        await safe_edit_text(callback.message, "Эта карточка устарела, пришли отрывок ещё раз.")
+        await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
 
-    await callback.answer("Собираю...")
+    await callback.answer("Putting it together...")
     speed = float(speed_str)
     await _generate_and_send(callback.message, token, speed)
     try:
@@ -1053,11 +1053,11 @@ async def ask_quality(
     token = uuid.uuid4().hex[:12]
     PENDING_QUALITY[token] = (title, artist, search_query, coverart, lyrics)
     buttons = [[
-        InlineKeyboardButton(text="320kbps · максимум", callback_data=f"quality:{token}:320"),
-        InlineKeyboardButton(text="192kbps · быстрее", callback_data=f"quality:{token}:192"),
+        InlineKeyboardButton(text="320kbps · best quality", callback_data=f"quality:{token}:320"),
+        InlineKeyboardButton(text="192kbps · faster", callback_data=f"quality:{token}:192"),
     ]]
     await safe_edit_text(
-        status, f"Нашёл: {label}\nКакое качество?", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
+        status, f"Found: {label}\nWhich quality?", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
     )
 
 
@@ -1067,7 +1067,7 @@ async def handle_quality(callback: CallbackQuery) -> None:
     pending = PENDING_QUALITY.pop(token, None)
     await callback.answer()
     if not pending:
-        await safe_edit_text(callback.message, "Эта кнопка устарела, пришли отрывок ещё раз.")
+        await safe_edit_text(callback.message, "This button expired, send the clip again.")
         return
     title, artist, search_query, coverart, lyrics = pending
     await start_delivery(callback.message, title, artist, search_query, int(bitrate), coverart, lyrics)
@@ -1076,7 +1076,7 @@ async def handle_quality(callback: CallbackQuery) -> None:
 @dp.message(F.voice | F.audio | F.video_note | F.video)
 async def handle_audio(message: Message):
     _sweep_stale_deliveries()
-    status = await message.reply("Слушаю...")
+    status = await message.reply("Listening...")
     with tempfile.TemporaryDirectory() as tmp:
         src = message.voice or message.audio or message.video_note or message.video
         sample_path = os.path.join(tmp, "sample")
@@ -1084,7 +1084,7 @@ async def handle_audio(message: Message):
             await bot.download(src.file_id, destination=sample_path)
         except Exception:
             logging.exception("download from telegram failed")
-            await safe_edit_text(status, "Файл слишком большой (лимит Telegram для ботов — 20MB) или не скачался, пришли другой.")
+            await safe_edit_text(status, "File's too big (Telegram's bot limit is 20MB) or failed to download — send a different one.")
             return
 
         clip_path = os.path.join(tmp, "clip.wav")
@@ -1096,7 +1096,7 @@ async def handle_audio(message: Message):
             candidates = []
 
     if not candidates:
-        await safe_edit_text(status, "Не смог распознать трек, пришли другой отрывок.")
+        await safe_edit_text(status, "Couldn't identify the track — send a different clip.")
         return
 
     if len(candidates) == 1:
@@ -1111,7 +1111,7 @@ async def handle_audio(message: Message):
         for i, (title, artist, _coverart, _lyrics) in enumerate(candidates)
     ]
     await safe_edit_text(
-        status, "Не уверен, какой это трек — выбери:", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
+        status, "Not sure which track this is — pick one:", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
     )
 
 
@@ -1121,7 +1121,7 @@ async def handle_pick(callback: CallbackQuery):
     candidates = PENDING.pop(token, None)
     await callback.answer()
     if not candidates:
-        await safe_edit_text(callback.message, "Эта кнопка устарела, пришли отрывок ещё раз.")
+        await safe_edit_text(callback.message, "This button expired, send the clip again.")
         return
     title, artist, coverart, lyrics = candidates[int(idx)]
     await ask_quality(callback.message, title, artist, coverart=coverart, lyrics=lyrics)
@@ -1130,29 +1130,29 @@ async def handle_pick(callback: CallbackQuery):
 @dp.message(F.text == "/start")
 async def start(message: Message):
     await message.reply(
-        "Пришли голосовое/аудио/видео с музыкой — найду трек. Дальше отмечаешь один или "
-        "несколько эффектов (оригинал, nightcore, bass boosted, 8D audio, reverb — 3 степени, "
-        "можно сочетать), жмёшь «Дальше» и выбираешь скорость: сначала грубо (0.5x-1.5x), "
-        "потом точно с шагом 0.01. Пока карточка ждёт скорость, можно просто написать число "
-        "текстом (например 0.837) вместо кликов по кнопкам.\n"
-        "«🎙 Как голосовое» в списке эффектов — прислать результат голосовым сообщением вместо mp3.\n"
-        "Можно написать название песни текстом, или прислать ссылку на YouTube, TikTok, "
-        "Spotify или Apple Music.\n"
-        "/history — последние распознанные треки, жми на любой, чтобы получить заново."
+        "Send a voice note/audio/video with music — I'll identify the track. Then check off one or "
+        "more effects (original, nightcore, bass boosted, 8D audio, reverb — 3 levels, "
+        "combinable), hit \"Next\" and pick a speed: rough first (0.5x-1.5x), "
+        "then exact in 0.01 steps. While a card is waiting on a speed, you can just type a number "
+        "as text (e.g. 0.837) instead of tapping buttons.\n"
+        "\"🎙 As voice note\" in the effects list — deliver the result as a voice message instead of mp3.\n"
+        "You can also just type a song name, or send a YouTube, TikTok, "
+        "Spotify, or Apple Music link.\n"
+        "/history — recently identified tracks, tap any to get it again."
     )
 
 
 @dp.message(F.text == "/history")
 async def history_cmd(message: Message):
     if not HISTORY:
-        await message.reply("Пока пусто — ничего не распознавал в этой сессии.")
+        await message.reply("Nothing yet — haven't identified anything this session.")
         return
     rows = []
     for hid in sorted(HISTORY, reverse=True):  # newest first — ids only ever increase
         entry = HISTORY[hid]
         label = f"{entry.artist} — {entry.title}" if entry.artist else entry.title
         rows.append([InlineKeyboardButton(text=label[:60], callback_data=f"hist:{hid}")])
-    await message.reply("Жми на трек, чтобы получить его заново:", reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
+    await message.reply("Tap a track to get it again:", reply_markup=InlineKeyboardMarkup(inline_keyboard=rows))
 
 
 @dp.callback_query(F.data.startswith("hist:"))
@@ -1161,9 +1161,9 @@ async def handle_history_pick(callback: CallbackQuery) -> None:
     await callback.answer()
     entry = HISTORY.get(int(hid_str))
     if not entry:
-        await safe_edit_text(callback.message, "Эта запись больше недоступна (слишком старая).")
+        await safe_edit_text(callback.message, "This entry is no longer available (too old).")
         return
-    status = await callback.message.answer("Ищу...")
+    status = await callback.message.answer("Searching...")
     await ask_quality(status, entry.title, entry.artist, search_query=entry.search_query, coverart=entry.coverart, lyrics=entry.lyrics)
 
 
@@ -1184,20 +1184,20 @@ async def handle_text_query(message: Message):
     if SPEED_TEXT_RE.match(query) and LAST_SPEED_TOKEN and LAST_SPEED_TOKEN in DELIVERY:
         speed = round(float(query), 2)
         if MIN_TYPED_SPEED <= speed <= MAX_TYPED_SPEED and DELIVERY[LAST_SPEED_TOKEN].selected:
-            status = await message.reply("Собираю...")
+            status = await message.reply("Putting it together...")
             ok = await _generate_and_send(status, LAST_SPEED_TOKEN, speed)
             if not ok:
-                await status.edit_text("Эта карточка устарела, пришли отрывок ещё раз.")
+                await status.edit_text("This card expired, send the clip again.")
             return
 
-    status = await message.reply(f"Ищу: {query}...")
+    status = await message.reply(f"Searching: {query}...")
 
     if DIRECT_DOWNLOAD_RE.match(query):
         try:
             info = await asyncio.to_thread(_probe_media_url, query)
         except Exception:
             logging.exception("link probe failed for %r", query)
-            await safe_edit_text(status, "Не смог открыть эту ссылку — проверь, что она рабочая и видео/трек доступен.")
+            await safe_edit_text(status, "Couldn't open that link — check that it's valid and the video/track is available.")
             return
         title = info.get("title") or query
         artist = info.get("uploader") or ""
@@ -1212,7 +1212,7 @@ async def handle_text_query(message: Message):
             page_title = None
         parsed = (_parse_spotify_title(page_title) or _parse_apple_music_title(page_title)) if page_title else None
         if not parsed:
-            await safe_edit_text(status, "Не смог прочитать название трека по этой ссылке — пришли название текстом.")
+            await safe_edit_text(status, "Couldn't read the track name from that link — send the name as text instead.")
             return
         title, artist = parsed
         await ask_quality(status, title, artist, search_query=f"{artist} {title}")
