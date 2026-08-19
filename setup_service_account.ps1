@@ -1,10 +1,10 @@
 $ErrorActionPreference = "Stop"
-$botDir = "C:\Users\blood\Downloads\проекты\music_shazam_bot"
-$pyDir = "C:\Users\blood\AppData\Local\Programs\Python\Python312"
-$ffmpegDir = "C:\Users\blood\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe"
-$denoDir = "C:\Users\blood\AppData\Local\Microsoft\WinGet\Packages\DenoLand.Deno_Microsoft.Winget.Source_8wekyb3d8bbwe"
-$nssm = "C:\Users\blood\AppData\Local\Microsoft\WinGet\Packages\NSSM.NSSM_Microsoft.Winget.Source_8wekyb3d8bbwe\nssm-2.24-101-g897c7ad\win64\nssm.exe"
-$outFile = "C:\Users\blood\DOWNLO~1\7B76~1\MUSIC_~1\setup_account_result.txt"
+$botDir = $PSScriptRoot
+$pyDir = Join-Path $env:LOCALAPPDATA "Programs\Python\Python312"
+$ffmpegDir = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe"
+$denoDir = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages\DenoLand.Deno_Microsoft.Winget.Source_8wekyb3d8bbwe"
+$nssm = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages\NSSM.NSSM_Microsoft.Winget.Source_8wekyb3d8bbwe\nssm-2.24-101-g897c7ad\win64\nssm.exe"
+$outFile = Join-Path $botDir "setup_account_result.txt"
 $acctName = "MusicShazamBotSvc"
 
 "=== start ===" | Out-File $outFile

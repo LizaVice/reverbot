@@ -75,11 +75,18 @@ if not ALLOWED_USER_IDS:
 with open(os.path.join(os.path.dirname(__file__), "bot.pid"), "w") as _f:
     _f.write(str(os.getpid()))
 
-# ponytail: winget-installed ffmpeg/deno aren't on PATH until shell restart; add them explicitly
-FFMPEG_DIR = r"C:\Users\blood\AppData\Local\Microsoft\WinGet\Packages\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-9.0-full_build\bin"
+# ponytail: winget installs per-user, and this runs as a Windows service
+# (frequently under LocalSystem or a dedicated service account, NOT
+# necessarily the account that ran winget) - os.environ["LOCALAPPDATA"] at
+# runtime points at whichever account is running the process, which is not
+# reliably the one with these packages installed. Read from .env instead of
+# hardcoding a path tied to one specific Windows account.
+FFMPEG_DIR = os.environ.get("FFMPEG_DIR", "")
+DENO_DIR = os.environ.get("DENO_DIR", "")
+if not FFMPEG_DIR or not DENO_DIR:
+    raise SystemExit("FFMPEG_DIR and DENO_DIR must be set in .env - see README for what they should point to.")
 FFMPEG_BIN = os.path.join(FFMPEG_DIR, "ffmpeg.exe")
 FFPROBE_BIN = os.path.join(FFMPEG_DIR, "ffprobe.exe")
-DENO_DIR = r"C:\Users\blood\AppData\Local\Microsoft\WinGet\Packages\DenoLand.Deno_Microsoft.Winget.Source_8wekyb3d8bbwe"
 for _dir in (FFMPEG_DIR, DENO_DIR):
     if _dir not in os.environ["PATH"]:
         os.environ["PATH"] += os.pathsep + _dir

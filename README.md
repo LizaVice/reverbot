@@ -34,6 +34,8 @@ Create a `.env` next to `bot.py`:
 ```
 BOT_TOKEN=<your Telegram bot token>
 ALLOWED_USER_IDS=<your numeric Telegram user id>
+FFMPEG_DIR=<folder containing ffmpeg.exe and ffprobe.exe>
+DENO_DIR=<folder containing deno.exe>
 ```
 
 `ALLOWED_USER_IDS` is optional but strongly recommended — without it the bot
@@ -41,11 +43,13 @@ answers any Telegram user who finds it (see the comment above `BOT_TOKEN` in
 `bot.py`). Get your own numeric id by messaging
 [@userinfobot](https://t.me/userinfobot).
 
-You'll also need `ffmpeg`/`ffprobe`, `deno` (yt-dlp's JS runtime for
-YouTube's signature challenge), and a `cookies.txt` (Netscape format,
-exported from a logged-in YouTube session — needed to avoid YouTube's bot
-checks). None of these are committed; adjust the hardcoded paths near the
-top of `bot.py` (`FFMPEG_DIR`, `DENO_DIR`) to your own install locations.
+`FFMPEG_DIR`/`DENO_DIR` are required — the bot won't start without them (see
+the comment above them in `bot.py` for why they're read from the environment
+instead of a hardcoded path: winget installs per-user, and this typically
+runs as a Windows service under an account that isn't the one that ran
+winget). You'll also need a `cookies.txt` (Netscape format, exported from a
+logged-in YouTube session — needed to avoid YouTube's bot checks). None of
+these are committed.
 
 Run directly:
 
@@ -60,8 +64,9 @@ dedicated low-privilege local account instead of your own).
 ## Project layout
 
 - `bot.py` — the whole bot (single file by design — see below)
-- `install_service.ps1`, `grant_service_logon.ps1`,
-  `setup_service_account.ps1` — Windows service deployment
+- `install_service.ps1`, `setup_service_account.ps1` — Windows service
+  deployment (the latter is optional, for running under a dedicated
+  low-privilege account instead of your own)
 - `restart.sh` — kills the running instance so the service supervisor
   relaunches it with fresh code
 

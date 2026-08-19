@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
-$nssm = "C:\Users\blood\AppData\Local\Microsoft\WinGet\Packages\NSSM.NSSM_Microsoft.Winget.Source_8wekyb3d8bbwe\nssm-2.24-101-g897c7ad\win64\nssm.exe"
-$botDir = "C:\Users\blood\DOWNLO~1\7B76~1\MUSIC_~1"
-$pyExe = "C:\Users\blood\AppData\Local\Programs\Python\Python312\python.exe"
+$nssm = Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Packages\NSSM.NSSM_Microsoft.Winget.Source_8wekyb3d8bbwe\nssm-2.24-101-g897c7ad\win64\nssm.exe"
+$botDir = $PSScriptRoot
+$pyExe = Join-Path $env:LOCALAPPDATA "Programs\Python\Python312\python.exe"
 
 # Secrets (BOT_TOKEN, optionally ALLOWED_USER_IDS) live in .env next to this
 # script, NOT hardcoded here. .env is gitignored — never commit or share it.
