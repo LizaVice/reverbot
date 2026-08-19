@@ -230,13 +230,6 @@ SIMPLE_EFFECTS = {
     "nightcore": ("Nightcore", None, "nightcore"),
     "bass_boosted": ("Bass Boosted", "bass=g=14:f=60:w=0.9", "bright"),
     "8d": ("8D Audio", "apulsator=hz=0.08:amount=1", "bright"),
-    # ponytail: naive phase-inversion center-channel cancellation (L-R/R-L),
-    # not real source separation — only cancels audio panned dead center in
-    # the original mix (usually the lead vocal), and typically takes centered
-    # bass/drums down with it too. Upgrade path: a real separation model
-    # (Demucs/Spleeter), which needs a heavy ML dependency this bot otherwise
-    # has no use for.
-    "karaoke": ("Karaoke (no vocals)", "pan=stereo|c0=c0-c1|c1=c1-c0", "bright"),
 }
 
 # key -> label, for keyboard building / combo labels. Detailed per-kind data
@@ -1161,7 +1154,7 @@ async def handle_pick(callback: CallbackQuery):
 async def start(message: Message):
     await message.reply(
         "Send a voice note/audio/video with music — I'll identify the track. Then check off one or "
-        "more effects (original, nightcore, bass boosted, 8D audio, karaoke, reverb — 3 levels, "
+        "more effects (original, nightcore, bass boosted, 8D audio, reverb — 3 levels, "
         "combinable), hit \"Next\" and pick a speed: rough first (0.5x-1.5x), "
         "then exact in 0.01 steps. While a card is waiting on a speed, you can just type a number "
         "as text (e.g. 0.837) instead of tapping buttons.\n"
