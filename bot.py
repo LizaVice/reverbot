@@ -18,6 +18,7 @@ from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware, Bot, Dispatcher, F
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import (
+    BotCommand,
     CallbackQuery,
     FSInputFile,
     InlineKeyboardButton,
@@ -1250,6 +1251,11 @@ def preflight_check():
 
 async def main():
     preflight_check()
+    await bot.set_my_commands([
+        BotCommand(command="start", description="How to use this bot"),
+        BotCommand(command="history", description="Recently identified tracks"),
+        BotCommand(command="terms", description="Usage terms / disclaimer"),
+    ])
     await dp.start_polling(bot)
 
 
