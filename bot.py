@@ -30,7 +30,7 @@ from aiogram.types import (
 from shazamio import Shazam
 from yt_dlp import YoutubeDL
 
-# ponytail: Windows picks the console codepage (cp1251 here) for redirected
+# Windows picks the console codepage (cp1251 here) for redirected
 # stdout/stderr, not UTF-8 — track titles and this repo's own Cyrillic path
 # were coming out as mangled bytes in the log. Force UTF-8 before logging is set up.
 for _stream in (sys.stdout, sys.stderr):
@@ -75,7 +75,7 @@ if not ALLOWED_USER_IDS:
 with open(os.path.join(os.path.dirname(__file__), "bot.pid"), "w") as _f:
     _f.write(str(os.getpid()))
 
-# ponytail: winget installs per-user, and this runs as a Windows service
+# winget installs per-user, and this runs as a Windows service
 # (frequently under LocalSystem or a dedicated service account, NOT
 # necessarily the account that ran winget) - os.environ["LOCALAPPDATA"] at
 # runtime points at whichever account is running the process, which is not
@@ -91,7 +91,7 @@ for _dir in (FFMPEG_DIR, DENO_DIR):
     if _dir not in os.environ["PATH"]:
         os.environ["PATH"] += os.pathsep + _dir
 
-# ponytail: --cookies-from-browser chrome hits an open yt-dlp bug (DPAPI
+# --cookies-from-browser chrome hits an open yt-dlp bug (DPAPI
 # decrypt fails against Chrome's newer cookie encryption). Firefox cookies
 # aren't OS-encrypted, so exported once to a static file instead (doesn't
 # depend on Firefox staying open, and dodges YouTube's bot-check).
@@ -132,7 +132,7 @@ class AllowlistMiddleware(BaseMiddleware):
 
 dp.message.middleware(AllowlistMiddleware())
 dp.callback_query.middleware(AllowlistMiddleware())
-# ponytail: default endpoint_country="GB" 404s on track_about for a large
+# default endpoint_country="GB" 404s on track_about for a large
 # fraction of matched ids (catalog entry not in the GB regional index even
 # though the fingerprint matched) - silently drops real matches down to
 # "couldn't recognize". US is Shazam's most complete catalog.
@@ -140,7 +140,7 @@ shazam = Shazam(endpoint_country="US")
 
 
 async def safe_edit_text(message: Message, text: str, **kwargs):
-    # ponytail: Telegram rejects an edit whose text+markup exactly match what's
+    # Telegram rejects an edit whose text+markup exactly match what's
     # already there (e.g. a double-tapped button) with a 400 that otherwise
     # crashes the handler. Harmless — the message already says what we wanted.
     try:
@@ -149,7 +149,7 @@ async def safe_edit_text(message: Message, text: str, **kwargs):
         if "message is not modified" not in str(e):
             raise
 
-# ponytail: trimming blindly to the first N seconds cut into intro talk/silence
+# trimming blindly to the first N seconds cut into intro talk/silence
 # on short clips and gave Shazam a wrong match. Only trim genuinely long input
 # (multi-minute video), and pull the sample from the middle, not the start.
 NO_TRIM_UNDER_SECONDS = 40
@@ -159,7 +159,7 @@ RECOGNIZE_CLIP_SECONDS = 25
 # chain still runs). asetrate+aresample shifts pitch together with speed (the
 # actual "sped up"/"slowed" trend sound), not just tempo.
 #
-# ponytail: tried afir convolution reverb with a synthetic (noise-burst +
+# tried afir convolution reverb with a synthetic (noise-burst +
 # exponential decay) impulse response here — spectrogram looked like a real
 # decaying tail, but live it sounded hollow/phasey ("как в вакууме"): a fake
 # IR built from raw noise has no clean initial impulse, so afir's convolution
@@ -167,7 +167,7 @@ RECOGNIZE_CLIP_SECONDS = 25
 # adding a tail on top. Real convolution reverb needs an actual recorded IR,
 # not a synthesized one; not worth it for what this gets used for.
 #
-# ponytail: a single aecho call (tried first, then a denser-tap version of
+# a single aecho call (tried first, then a denser-tap version of
 # the same thing) turned out to have two real problems, both confirmed with
 # an impulse test (astats measured peak level; a noise-burst spectrogram
 # measured the tail's frequency content):
@@ -220,7 +220,7 @@ REVERB_PRESETS = {
 # REVERB_PRESETS above) need the dry/wet filter_complex graph instead — see
 # _generate_and_send, which picks the right path depending on what's selected.
 #
-# ponytail: "8D audio" trend edits are really just a slow amplitude pan
+# "8D audio" trend edits are really just a slow amplitude pan
 # between channels — ffmpeg's apulsator does exactly that (no real binaural
 # HRTF processing, which is what actual 8D would need). It no longer bundles
 # a baked-in reverb tail — select a Reverb preset alongside it if you want both.
@@ -236,7 +236,7 @@ SIMPLE_EFFECTS = {
 EFFECTS = {k: v[0] for k, v in {**SIMPLE_EFFECTS, **REVERB_PRESETS}.items()}
 SPEEDS = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 
-# ponytail: raw yt-dlp extraction and the pitch-shifted variants both sound
+# raw yt-dlp extraction and the pitch-shifted variants both sound
 # thin/quiet next to an actual release. First attempt (one-shot compressor +
 # EQ + single-pass loudnorm) came back sounding "глухой" (muffled) — single-
 # pass loudnorm's dynamic gain-riding smears transients, a 3:1 compressor was
@@ -266,7 +266,7 @@ PRE_CHAINS = {
 }
 
 
-# ponytail: a stuck/hung ffmpeg process (bad input, weird codec, whatever)
+# a stuck/hung ffmpeg process (bad input, weird codec, whatever)
 # would otherwise block the handler forever - Telegram's "Слушаю..." status
 # never updates and the whole request just hangs. Fail it loudly instead.
 FFMPEG_TIMEOUT_SECONDS = 60
@@ -299,7 +299,7 @@ def _measure_loudness(path: str) -> dict:
 def master_audio(src: str, dst: str, pre_chain: str = PRE_MASTER_CHAIN, effect_filter: str | None = None, bitrate: int = 320):
     """EQ/compress, measure true loudness, then apply a real two-pass loudnorm.
 
-    ponytail: a variant used to run its pitch/reverb effect as its own ffmpeg
+    A variant used to run its pitch/reverb effect as its own ffmpeg
     pass into an intermediate file, then master_audio ran a *separate* EQ
     pass on that file — two subprocess spawns + an extra disk round-trip for
     what ffmpeg can do in one filter chain (`a,b,c` applies identically to
@@ -407,14 +407,14 @@ def _track_tuple(track: dict) -> TrackTuple | None:
 
 
 async def _recognize_once(file_path: str) -> list[TrackTuple]:
-    # ponytail: shazamio's "track" (its own top pick) has occasionally been
+    # shazamio's "track" (its own top pick) has occasionally been
     # wrong on short/noisy clips, but it comes free with the recognize() call
     # — no extra request. Seed candidates with it, then use the raw "matches"
     # list (other fingerprint hits, possibly different songs) via track_about
     # to fill in real alternatives. This means a track_about outage (has
     # happened — Shazam's catalog lookup 404ing independent of anything we
     # do) degrades to "just the free top pick" instead of total failure.
-    # ponytail: "retryms" in the response means Shazam's signal from this exact
+    # "retryms" in the response means Shazam's signal from this exact
     # clip was too ambiguous, not "server busy" — resending the identical bytes
     # gets the identical answer. recognize_candidates() below already retries
     # with speed-corrected variants, which is a real second chance; waiting on
@@ -442,7 +442,7 @@ async def _recognize_once(file_path: str) -> list[TrackTuple]:
         try:
             return await asyncio.wait_for(shazam.track_about(track_id=tid), timeout=SHAZAM_TIMEOUT)
         except Exception:
-            # ponytail: one bad lookup shouldn't discard the candidates already found
+            # one bad lookup shouldn't discard the candidates already found
             logging.exception("track_about failed for id=%s", tid)
             return None
 
@@ -467,7 +467,7 @@ async def _recognize_once(file_path: str) -> list[TrackTuple]:
     return candidates
 
 
-# ponytail: "slowed"/"sped up" trend edits shift both tempo and pitch together
+# "slowed"/"sped up" trend edits shift both tempo and pitch together
 # (asetrate-style), which moves the fingerprint just enough that Shazam's own
 # tolerance for timeskew/frequencyskew doesn't cover it. If the clip as-is
 # gets nothing, try re-speeding it by a few common trend ratios and see if
@@ -476,7 +476,7 @@ SPEED_CORRECTIONS = [1.06, 0.94, 1.12, 0.88]
 
 
 async def recognize_candidates(file_path: str, tmp_dir: str) -> list[TrackTuple]:
-    # ponytail: the raw clip alone can spuriously match a WRONG track (seen live:
+    # the raw clip alone can spuriously match a WRONG track (seen live:
     # a "slowed + reverb" edit matched something else entirely on the raw pass,
     # and since raw returned *something*, the speed-corrected passes — one of
     # which held the actual right answer — never even ran). Always run raw +
@@ -514,7 +514,7 @@ class NoMatchingVideoError(RuntimeError):
 YOUTUBE_URL_RE = re.compile(
     r"^(https?://)?(www\.|m\.)?(youtube\.com/(watch\?|shorts/|live/)|youtu\.be/)", re.IGNORECASE
 )
-# ponytail: TikTok is handled the same way as a direct YouTube link (yt-dlp
+# TikTok is handled the same way as a direct YouTube link (yt-dlp
 # has a native extractor for both) — no Shazam involved, no search, whatever
 # the link points to IS the answer.
 TIKTOK_URL_RE = re.compile(r"^(https?://)?(www\.|vm\.|vt\.|m\.)?tiktok\.com/", re.IGNORECASE)
@@ -544,7 +544,7 @@ def _fetch_page_title(url: str) -> str:
     return html.unescape(m.group(1)).strip()
 
 
-# ponytail: scraping the <title> tag's current wording is fragile — Spotify/
+# scraping the <title> tag's current wording is fragile — Spotify/
 # Apple can and do change this format, silently breaking the regex below. No
 # real fix without an API key (out of scope for a personal bot); ceiling is
 # "falls back to asking for the song name as text", not a crash.
@@ -563,7 +563,7 @@ def _title_words(text: str) -> set[str]:
 
 
 def _looks_like_match(candidate_title: str, target: str) -> bool:
-    # ponytail: naive word-overlap, not audio fingerprinting — good enough to
+    # naive word-overlap, not audio fingerprinting — good enough to
     # catch "completely different song" (the actual failure mode seen), not
     # meant to catch subtly-wrong remixes/covers.
     target_words = _title_words(target)
@@ -576,7 +576,7 @@ def _looks_like_match(candidate_title: str, target: str) -> bool:
 def download_mp3(query: str, out_dir: str, match_target: str | None = None, bitrate: int = 320) -> str:
     outtmpl = os.path.join(out_dir, "%(title)s.%(ext)s")
     is_direct_link = bool(DIRECT_DOWNLOAD_RE.match(query))
-    # ponytail: without extract_flat, ytsearch resolves full formats (incl. the
+    # without extract_flat, ytsearch resolves full formats (incl. the
     # JS signature challenge) for all 5 results just to read their duration —
     # flat listing gets the same metadata without the per-video resolution cost.
     #
@@ -590,7 +590,7 @@ def download_mp3(query: str, out_dir: str, match_target: str | None = None, bitr
     # to fetch them. YouTube alone, kept. (TikTok/YouTube direct links skip
     # search entirely — see is_direct_link above.)
     if is_direct_link:
-        # ponytail: a direct link IS the target — no search, no duration floor
+        # a direct link IS the target — no search, no duration floor
         # (an explicitly-linked short is still what was asked for), no title-
         # match sanity check (there's no candidate list to be wrong about).
         candidates = [{"url": query}]
@@ -642,7 +642,7 @@ def download_mp3(query: str, out_dir: str, match_target: str | None = None, bitr
 
 
 def is_auth_error(exc: Exception) -> bool:
-    # ponytail: cookies.txt was exported once from a live Firefox session and
+    # cookies.txt was exported once from a live Firefox session and
     # will eventually expire — when it does, yt-dlp's error is distinctive
     # enough to tell the user what's actually wrong instead of a generic fail.
     text = str(exc).lower()
@@ -653,7 +653,7 @@ def is_auth_error(exc: Exception) -> bool:
 class DeliveryState:
     """One recognized track, waiting for the user to pick which version(s) to get.
 
-    ponytail: the source mp3 has to survive across multiple separate button
+    The source mp3 has to survive across multiple separate button
     clicks (each a fresh callback handler invocation), so its temp dir can't
     be a `with tempfile.TemporaryDirectory()` scoped to one call like the old
     single-shot deliver_track was — it's a plain mkdtemp() that outlives the
@@ -700,7 +700,7 @@ class HistoryEntry:
     lyrics: str | None
 
 
-# ponytail: keyed by an ever-incrementing id instead of list position, so a
+# keyed by an ever-incrementing id instead of list position, so a
 # "resend this" button from an old /history message still points at the
 # right track even after older entries get trimmed off (a list index would
 # silently shift to point at a DIFFERENT track once the front is trimmed).
@@ -1008,7 +1008,7 @@ async def _generate_and_send(target: Message, token: str, speed: float) -> bool:
             except TelegramBadRequest:
                 if thumb is None:
                     raise
-                # ponytail: Shazam's coverart isn't guaranteed to meet Telegram's
+                # Shazam's coverart isn't guaranteed to meet Telegram's
                 # thumbnail constraints (size/aspect) — don't lose the actual
                 # audio over a thumbnail Telegram didn't like.
                 await target.answer_audio(FSInputFile(dst), title=display_title, performer=state.artist or None)
@@ -1176,7 +1176,7 @@ async def handle_text_query(message: Message):
     _sweep_stale_deliveries()
     query = message.text.strip()
 
-    # ponytail: a bare number only means "exact speed for my last effect pick"
+    # a bare number only means "exact speed for my last effect pick"
     # when there's actually a card waiting on a speed — otherwise (or if the
     # number is out of the sane 0.1-3.0 playback-speed range) it falls through
     # to the normal song-search path below, so a track literally titled "1999"
@@ -1222,7 +1222,7 @@ async def handle_text_query(message: Message):
 
 
 def preflight_check():
-    # ponytail: fail fast and clearly on config drift (reinstall, disk cleanup)
+    # fail fast and clearly on config drift (reinstall, disk cleanup)
     # instead of a cryptic error the first time a user sends a clip.
     missing = [p for p in (FFMPEG_BIN, FFPROBE_BIN) if not os.path.exists(p)]
     if not os.path.exists(DENO_DIR):
