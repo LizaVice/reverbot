@@ -43,7 +43,7 @@ them in a different effect/speed combo without re-searching.
 |---|---|
 | 🔍 Recognition | [`shazamio`](https://github.com/dotX12/ShazamIO), with speed-corrected retries so "slowed"/"sped up" trend edits don't throw off Shazam's fingerprint match |
 | ⬇️ Download | `yt-dlp` — YouTube & TikTok natively; Spotify/Apple Music via page-title metadata scraping, then a YouTube search |
-| 🎚 Effects | Nightcore, Bass Boosted, 8D Audio, plus three reverb presets (Light/Medium/Heavy) — all combinable with each other |
+| 🎚 Effects | Nightcore, Bass Boosted, 8D Audio, Karaoke (vocal removal), plus three reverb presets (Light/Medium/Heavy) — all combinable with each other |
 | ⏩ Speed | 0.5x–1.5x, adjustable down to 0.01x precision, or type an exact number |
 | 🎧 Delivery | Mastered mp3, or as a Telegram voice note |
 | 🖼 Extras | Cover art thumbnail, on-demand lyrics, `/history` with one-tap re-delivery |
@@ -145,6 +145,5 @@ it actually does and who's responsible for how it's used.
   ffmpeg needed, cheap to cover
 - A GitHub Actions workflow that at least runs `python -m py_compile bot.py`
   and any added tests on push
-- Karaoke/instrumental (naive center-channel cancellation), custom clip
-  trimming by timestamp, combining multiple effects with independently
-  chosen speeds in one request
+- Custom clip trimming by timestamp, combining multiple effects with
+  independently chosen speeds in one request
