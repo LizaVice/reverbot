@@ -678,10 +678,16 @@ class DeliveryState:
 
 DELIVERY: dict[str, DeliveryState] = {}
 DELIVERY_TTL_SECONDS = 1800  # 30 min — enough to click through several versions
-# the most recent token that has an effect combo picked and is waiting on a
-# speed — lets a typed number like "0.837" work as a speed shortcut (see
-# handle_text_query) without the user having to tap through the buttons.
-LAST_SPEED_TOKEN: str | None = None
+# guards the "already generated" file-exists check in _generate_and_send so
+# two fast taps for the same token+effect+speed don't both start ffmpeg
+# writing the same output file at once — keyed by the dst path itself.
+_GENERATION_LOCKS: dict[str, asyncio.Lock] = {}
+# keyed by chat_id, not one bare token — a single bot-wide global here would
+# let one allowed user's typed speed shortcut resolve to a DIFFERENT allowed
+# user's in-progress card if ALLOWED_USER_IDS has more than one id and both
+# tap "Go" around the same time. Lets a typed number like "0.837" work as a
+# speed shortcut (see handle_text_query) without tapping through the buttons.
+LAST_SPEED_TOKEN: dict[int, str] = {}
 
 
 def _sweep_stale_deliveries() -> None:
@@ -690,6 +696,12 @@ def _sweep_stale_deliveries() -> None:
     for tok in stale:
         st = DELIVERY.pop(tok)
         shutil.rmtree(st.dir, ignore_errors=True)
+        for dst in [d for d in _GENERATION_LOCKS if d.startswith(st.dir)]:
+            del _GENERATION_LOCKS[dst]
+    for tok in [t for t, (created, _) in PENDING.items() if now - created > PENDING_TTL_SECONDS]:
+        del PENDING[tok]
+    for tok in [t for t, (created, _) in PENDING_QUALITY.items() if now - created > PENDING_TTL_SECONDS]:
+        del PENDING_QUALITY[tok]
 
 
 @dataclass
@@ -886,14 +898,13 @@ async def handle_voice_toggle(callback: CallbackQuery) -> None:
 
 @dp.callback_query(F.data.startswith("go:"))
 async def handle_go(callback: CallbackQuery) -> None:
-    global LAST_SPEED_TOKEN
     _, token = callback.data.split(":", 1)
     await callback.answer()
     state = DELIVERY.get(token)
     if not state or not state.selected:
         await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
-    LAST_SPEED_TOKEN = token
+    LAST_SPEED_TOKEN[callback.message.chat.id] = token
     label = f"{state.artist} — {state.title}" if state.artist else state.title
     await safe_edit_text(
         callback.message, f"{label}\n{_combo_label(state)} — what speed?", reply_markup=_speed_keyboard(token)
@@ -934,10 +945,13 @@ async def handle_speed_range(callback: CallbackQuery) -> None:
     _, token, base_str = callback.data.split(":", 2)
     await callback.answer()
     state = DELIVERY.get(token)
-    if not state or not state.selected:
+    try:
+        base = float(base_str)
+    except ValueError:
+        base = None
+    if not state or not state.selected or base is None:
         await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
-    base = float(base_str)
     label = f"{state.artist} — {state.title}" if state.artist else state.title
     await safe_edit_text(
         callback.message,
@@ -986,15 +1000,16 @@ async def _generate_and_send(target: Message, token: str, speed: float) -> bool:
     dst = os.path.join(state.dir, f"{combo_key}_{speed}.mp3".replace("+", "_"))
     display_title = f"{state.title} ({label}, {speed}x)"
     try:
-        if not os.path.exists(dst):
-            if reverb_key:
-                await asyncio.to_thread(
-                    master_reverb, state.mp3_path, dst, speed_filter,
-                    REVERB_PRESETS[reverb_key], extra_filters, pre_chain, state.bitrate,
-                )
-            else:
-                full_filter = ",".join([speed_filter] + extra_filters)
-                await asyncio.to_thread(master_audio, state.mp3_path, dst, pre_chain, full_filter, state.bitrate)
+        async with _GENERATION_LOCKS.setdefault(dst, asyncio.Lock()):
+            if not os.path.exists(dst):
+                if reverb_key:
+                    await asyncio.to_thread(
+                        master_reverb, state.mp3_path, dst, speed_filter,
+                        REVERB_PRESETS[reverb_key], extra_filters, pre_chain, state.bitrate,
+                    )
+                else:
+                    full_filter = ",".join([speed_filter] + extra_filters)
+                    await asyncio.to_thread(master_audio, state.mp3_path, dst, pre_chain, full_filter, state.bitrate)
         if state.as_voice:
             voice_path = dst + ".ogg"
             if not os.path.exists(voice_path):
@@ -1026,13 +1041,16 @@ async def _generate_and_send(target: Message, token: str, speed: float) -> bool:
 async def handle_speed(callback: CallbackQuery) -> None:
     _, token, speed_str = callback.data.split(":", 2)
     state = DELIVERY.get(token)
-    if not state or not state.selected:
+    try:
+        speed = float(speed_str)
+    except ValueError:
+        speed = None
+    if not state or not state.selected or speed is None:
         await callback.answer()
         await safe_edit_text(callback.message, "This card expired, send the clip again.")
         return
 
     await callback.answer("Putting it together...")
-    speed = float(speed_str)
     await _generate_and_send(callback.message, token, speed)
     try:
         await callback.message.edit_reply_markup(reply_markup=_fine_speed_keyboard(token, _bucket(speed)))
@@ -1040,10 +1058,13 @@ async def handle_speed(callback: CallbackQuery) -> None:
         pass
 
 
-# token -> candidates, for the track-picker keyboard below.
-# Personal single-user bot, so plain in-memory dicts are enough (no persistence needed).
-PENDING: dict[str, list[TrackTuple]] = {}
-PENDING_QUALITY: dict[str, tuple[str, str, str | None, str | None, str | None]] = {}
+# token -> (created_at, candidates), for the track-picker keyboard below. Swept
+# alongside DELIVERY in _sweep_stale_deliveries — these used to have no expiry
+# at all, so an abandoned "which track?"/"which quality?" prompt would sit in
+# memory for the life of the process.
+PENDING_TTL_SECONDS = 600  # 10 min — plenty of time to tap a pending button
+PENDING: dict[str, tuple[float, list[TrackTuple]]] = {}
+PENDING_QUALITY: dict[str, tuple[float, tuple[str, str, str | None, str | None, str | None]]] = {}
 
 
 async def ask_quality(
@@ -1052,7 +1073,7 @@ async def ask_quality(
 ) -> None:
     label = f"{artist} — {title}" if artist else title
     token = uuid.uuid4().hex[:12]
-    PENDING_QUALITY[token] = (title, artist, search_query, coverart, lyrics)
+    PENDING_QUALITY[token] = (time.time(), (title, artist, search_query, coverart, lyrics))
     buttons = [[
         InlineKeyboardButton(text="320kbps · best quality", callback_data=f"quality:{token}:320"),
         InlineKeyboardButton(text="192kbps · faster", callback_data=f"quality:{token}:192"),
@@ -1065,12 +1086,12 @@ async def ask_quality(
 @dp.callback_query(F.data.startswith("quality:"))
 async def handle_quality(callback: CallbackQuery) -> None:
     _, token, bitrate = callback.data.split(":")
-    pending = PENDING_QUALITY.pop(token, None)
+    entry = PENDING_QUALITY.pop(token, None)
     await callback.answer()
-    if not pending:
+    if not entry or not bitrate.isdigit():
         await safe_edit_text(callback.message, "This button expired, send the clip again.")
         return
-    title, artist, search_query, coverart, lyrics = pending
+    _, (title, artist, search_query, coverart, lyrics) = entry
     await start_delivery(callback.message, title, artist, search_query, int(bitrate), coverart, lyrics)
 
 
@@ -1106,7 +1127,7 @@ async def handle_audio(message: Message):
         return
 
     token = uuid.uuid4().hex[:12]
-    PENDING[token] = candidates
+    PENDING[token] = (time.time(), candidates)
     buttons = [
         [InlineKeyboardButton(text=f"{artist} — {title}", callback_data=f"pick:{token}:{i}")]
         for i, (title, artist, _coverart, _lyrics) in enumerate(candidates)
@@ -1119,11 +1140,12 @@ async def handle_audio(message: Message):
 @dp.callback_query(F.data.startswith("pick:"))
 async def handle_pick(callback: CallbackQuery):
     _, token, idx = callback.data.split(":")
-    candidates = PENDING.pop(token, None)
+    entry = PENDING.pop(token, None)
     await callback.answer()
-    if not candidates:
+    if not entry or not idx.isdigit() or int(idx) >= len(entry[1]):
         await safe_edit_text(callback.message, "This button expired, send the clip again.")
         return
+    _, candidates = entry
     title, artist, coverart, lyrics = candidates[int(idx)]
     await ask_quality(callback.message, title, artist, coverart=coverart, lyrics=lyrics)
 
@@ -1175,7 +1197,7 @@ async def history_cmd(message: Message):
 async def handle_history_pick(callback: CallbackQuery) -> None:
     _, hid_str = callback.data.split(":", 1)
     await callback.answer()
-    entry = HISTORY.get(int(hid_str))
+    entry = HISTORY.get(int(hid_str)) if hid_str.isdigit() else None
     if not entry:
         await safe_edit_text(callback.message, "This entry is no longer available (too old).")
         return
@@ -1191,20 +1213,33 @@ MIN_TYPED_SPEED, MAX_TYPED_SPEED = 0.1, 3.0
 async def handle_text_query(message: Message):
     _sweep_stale_deliveries()
     query = message.text.strip()
+    last_token = LAST_SPEED_TOKEN.get(message.chat.id)
 
     # a bare number only means "exact speed for my last effect pick"
     # when there's actually a card waiting on a speed — otherwise (or if the
     # number is out of the sane 0.1-3.0 playback-speed range) it falls through
     # to the normal song-search path below, so a track literally titled "1999"
     # still searches normally.
-    if SPEED_TEXT_RE.match(query) and LAST_SPEED_TOKEN and LAST_SPEED_TOKEN in DELIVERY:
+    if SPEED_TEXT_RE.match(query) and last_token and last_token in DELIVERY:
         speed = round(float(query), 2)
-        if MIN_TYPED_SPEED <= speed <= MAX_TYPED_SPEED and DELIVERY[LAST_SPEED_TOKEN].selected:
+        if MIN_TYPED_SPEED <= speed <= MAX_TYPED_SPEED and DELIVERY[last_token].selected:
             status = await message.reply("Putting it together...")
-            ok = await _generate_and_send(status, LAST_SPEED_TOKEN, speed)
+            ok = await _generate_and_send(status, last_token, speed)
             if not ok:
                 await status.edit_text("This card expired, send the clip again.")
             return
+
+    # anything else that looks like a URL but isn't one of the schemes handled
+    # explicitly below gets rejected here rather than falling through to the
+    # ytsearch call — yt-dlp treats a string that already parses as a URL as a
+    # direct fetch target regardless of the "search" prefix, so an
+    # unrecognized link would otherwise make the bot's server fetch whatever
+    # address a user typed (SSRF), not search for it.
+    if "://" in query and not (
+        DIRECT_DOWNLOAD_RE.match(query) or SPOTIFY_URL_RE.match(query) or APPLE_MUSIC_URL_RE.match(query)
+    ):
+        await message.reply("That kind of link isn't supported — only YouTube, TikTok, Spotify, Apple Music, or a plain song name.")
+        return
 
     status = await message.reply(f"Searching: {query}...")
 
