@@ -128,6 +128,9 @@ watchdog.py                 checks the service every run, Telegrams you on
                              a down/recovered transition (stdlib only)
 install_watchdog_task.ps1   registers watchdog.py as a 15-min Scheduled Task
 test_watchdog.py            self-check for watchdog.py's alert logic
+test_bot_logic.py           self-check for bot.py's pure parsing/matching
+                             logic — no network or ffmpeg needed
+.github/workflows/ci.yml    runs py_compile + both test files on every push
 ```
 
 ## ⚖️ Disclaimer
@@ -140,11 +143,6 @@ it actually does and who's responsible for how it's used.
 
 - Split `bot.py` into modules (recognition / download / mastering /
   handlers) once it grows past comfortable single-file size
-- Tests around the pure logic (`_looks_like_match`, `_bucket`,
-  `_parse_spotify_title` / `_parse_apple_music_title`) — no network or
-  ffmpeg needed, cheap to cover
-- A GitHub Actions workflow that at least runs `python -m py_compile bot.py`
-  and any added tests on push
 - Custom clip trimming by timestamp, combining multiple effects with
   independently chosen speeds in one request
 - Karaoke/vocal removal — tried the cheap version (ffmpeg phase-inversion
