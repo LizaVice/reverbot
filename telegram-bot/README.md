@@ -10,9 +10,10 @@ The bot's reverb uses separate dry, early-reflection, and late-reflection paths 
 
 ## Setup on Windows
 
-Install Python 3.12, FFmpeg with `ffprobe`, and Deno. From the repository directory, install the Python dependencies:
+Install Python 3.12, FFmpeg with `ffprobe`, and Deno. From the repository root, open the bot folder and install its Python dependencies:
 
 ```powershell
+cd telegram-bot
 python -m pip install -r requirements.txt
 ```
 
@@ -29,15 +30,17 @@ This bot version also expects a local Netscape-format `cookies.txt` beside `bot.
 
 ## Service and watchdog
 
-- [`install_service.ps1`](../install_service.ps1) installs or updates the Windows service using [NSSM](https://nssm.cc/). [`setup_service_account.ps1`](../setup_service_account.ps1) can set up a dedicated local service account.
-- [`install_watchdog_task.ps1`](../install_watchdog_task.ps1) registers a scheduled task that runs every 15 minutes. [`watchdog.py`](../watchdog.py) sends a Telegram alert when the service stops or recovers. The default scheduled task runs while the installing user is signed in.
-- [`restart.sh`](../restart.sh) stops the current bot process so the service supervisor can restart it.
+If you are updating an existing checkout, the bot now lives in `telegram-bot/`. Move your local `.env` and `cookies.txt` into that folder. Update any service or scheduled task that points to the old location before starting the bot from the new path.
+
+- [`install_service.ps1`](install_service.ps1) installs or updates the Windows service using [NSSM](https://nssm.cc/). [`setup_service_account.ps1`](setup_service_account.ps1) can set up a dedicated local service account.
+- [`install_watchdog_task.ps1`](install_watchdog_task.ps1) registers a scheduled task that runs every 15 minutes. [`watchdog.py`](watchdog.py) sends a Telegram alert when the service stops or recovers. The default scheduled task runs while the installing user is signed in.
+- [`restart.sh`](restart.sh) stops the current bot process so the service supervisor can restart it.
 
 ## Repository guide
 
 | Path | Purpose |
 | --- | --- |
-| [`bot.py`](../bot.py) | Telegram handlers, track recognition, audio downloads, and effect processing. |
-| [`requirements.txt`](../requirements.txt) | Python dependencies for the bot. |
-| [`test_bot_logic.py`](../test_bot_logic.py) and [`test_watchdog.py`](../test_watchdog.py) | Checks for bot logic and watchdog alerts. |
+| [`bot.py`](bot.py) | Telegram handlers, track recognition, audio downloads, and effect processing. |
+| [`requirements.txt`](requirements.txt) | Python dependencies for the bot. |
+| [`test_bot_logic.py`](test_bot_logic.py) and [`test_watchdog.py`](test_watchdog.py) | Checks for bot logic and watchdog alerts. |
 | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | Checks Python syntax and runs both test files on pull requests and pushes to `main`. |
